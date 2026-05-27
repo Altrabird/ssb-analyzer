@@ -16,7 +16,10 @@ export default function StudentsView({ reports, search }) {
     return roster.filter((r) => {
       if (classFilter !== 'all' && !r.classes.includes(classFilter)) return false
       if (q) {
-        const hay = (r.nama + ' ' + r.classes.join(' ')).toLowerCase()
+        const subjeks = r.records.map((x) => x.subjek).filter(Boolean).join(' ')
+        const catatans = r.records.map((x) => x.catatan).filter(Boolean).join(' ')
+        const alasans = r.records.map((x) => x.alasan).filter(Boolean).join(' ')
+        const hay = (r.nama + ' ' + r.classes.join(' ') + ' ' + subjeks + ' ' + catatans + ' ' + alasans).toLowerCase()
         if (!hay.includes(q)) return false
       }
       return true
@@ -168,11 +171,18 @@ export default function StudentsView({ reports, search }) {
                                   {rec.status}
                                 </span>
                               </div>
-                              <div className="mt-1 text-ink-500 dark:text-ink-400">
-                                {rec.kelas} {rec.subjek ? `· ${rec.subjek}` : ''}
+                              <div className="mt-1 flex flex-wrap gap-x-1.5 text-ink-500 dark:text-ink-400">
+                                {rec.kelas && <span>{rec.kelas}</span>}
+                                {rec.subjek && <span>· {rec.subjek}</span>}
+                                {rec.guru && <span>· {rec.guru}</span>}
                               </div>
                               {rec.alasan && (
                                 <div className="mt-1 italic text-ink-600 dark:text-ink-300">"{rec.alasan}"</div>
+                              )}
+                              {rec.catatan && (
+                                <div className="mt-1 rounded-md bg-ink-50 px-2 py-1 text-[11px] text-ink-600 dark:bg-ink-800/60 dark:text-ink-300">
+                                  <span className="font-semibold">Catatan:</span> {rec.catatan}
+                                </div>
                               )}
                             </div>
                           ))}

@@ -109,6 +109,7 @@ export function studentRoster(reports) {
         kelas: r.header.kelas,
         subjek: r.header.subjek,
         guru: r.header.guru,
+        catatan: r.header.catatan,
         status: s.status,
         alasan: s.alasan,
         evidens: s.evidens,

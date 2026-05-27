@@ -9,7 +9,7 @@ export default function LoadingScreen({ message, progress }) {
         {typeof progress === 'object' && progress && (
           <>
             <div className="mt-2 text-sm text-ink-500 dark:text-ink-400">
-              {progress.current} dari {progress.total} fail
+              {progress.current} daripada {progress.total} fail
             </div>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
               <div

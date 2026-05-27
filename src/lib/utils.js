@@ -76,7 +76,7 @@ export function statusColor(status) {
 export function normalizeName(s) {
   return (s || '')
     .toUpperCase()
+    .replace(/[^A-Z\s]/g, ' ')
     .replace(/\s+/g, ' ')
-    .replace(/[^A-Z\s]/g, '')
     .trim()
 }

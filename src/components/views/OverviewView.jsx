@@ -77,6 +77,7 @@ export default function OverviewView({ reports }) {
                   <th className="px-4 py-2.5">Kelas</th>
                   <th className="px-4 py-2.5">Guru</th>
                   <th className="px-4 py-2.5">Subjek</th>
+                  <th className="px-4 py-2.5">Catatan</th>
                   <th className="px-4 py-2.5 text-right">Murid</th>
                   <th className="px-4 py-2.5 text-right">% Hantar</th>
                 </tr>
@@ -86,10 +87,13 @@ export default function OverviewView({ reports }) {
                   .sort((a, b) => (a.header.tarikh || '').localeCompare(b.header.tarikh || ''))
                   .map((r) => (
                     <tr key={r.id} className="text-ink-700 hover:bg-ink-50/60 dark:text-ink-200 dark:hover:bg-ink-800/40">
-                      <td className="px-4 py-2.5 font-medium">{fmtDate(r.header.tarikh)}</td>
-                      <td className="px-4 py-2.5">{r.header.kelas || '—'}</td>
-                      <td className="px-4 py-2.5">{r.header.guru || '—'}</td>
-                      <td className="px-4 py-2.5">{r.header.subjek || '—'}</td>
+                      <td className="px-4 py-2.5 whitespace-nowrap font-medium">{fmtDate(r.header.tarikh)}</td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">{r.header.kelas || '—'}</td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">{r.header.guru || '—'}</td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">{r.header.subjek || '—'}</td>
+                      <td className="px-4 py-2.5 max-w-[18rem] truncate" title={r.header.catatan || ''}>
+                        {r.header.catatan || '—'}
+                      </td>
                       <td className="px-4 py-2.5 text-right tabular-nums">{r.summary.jumlahMurid}</td>
                       <td className="px-4 py-2.5 text-right">
                         <span

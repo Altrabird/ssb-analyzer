@@ -5,10 +5,10 @@ import Logo from './Logo'
 
 const NAV = [
   { id: 'overview', label: 'Ringkasan', icon: Boxes },
-  { id: 'compliance', label: 'Pematuhan ikut Kelas', icon: BarChart3 },
-  { id: 'trend', label: 'Tren ikut Tarikh', icon: LineChart },
+  { id: 'compliance', label: 'Pematuhan mengikut Kelas', icon: BarChart3 },
+  { id: 'trend', label: 'Tren mengikut Tarikh', icon: LineChart },
   { id: 'students', label: 'Jejak Murid', icon: Users },
-  { id: 'reasons', label: 'Alasan & Leaderboard', icon: ListTodo },
+  { id: 'reasons', label: 'Alasan & Carta Kedudukan', icon: ListTodo },
 ]
 
 export default function Sidebar({ view, onView, onAddMore, onRefresh, onSignOut, source, reportCount }) {
@@ -42,9 +42,9 @@ export default function Sidebar({ view, onView, onAddMore, onRefresh, onSignOut,
       <div className="border-t border-ink-200/70 p-3 dark:border-ink-800/70">
         <div className="mb-3 rounded-xl bg-gradient-to-br from-brand-50 to-accent-50 p-3 text-xs dark:from-brand-950/30 dark:to-accent-950/30">
           <div className="font-semibold text-brand-700 dark:text-brand-300">
-            {source === 'drive' ? 'Disambung ke Drive' : source === 'demo' ? 'Mod Demo' : 'Fail Tempatan'}
+            {source === 'drive' ? 'Disambungkan ke Drive' : source === 'demo' ? 'Mod Demo' : 'Fail Tempatan'}
           </div>
-          <div className="mt-0.5 text-ink-600 dark:text-ink-400">{reportCount} laporan dimuat</div>
+          <div className="mt-0.5 text-ink-600 dark:text-ink-400">{reportCount} laporan dimuatkan</div>
         </div>
         <button className="nav-link w-full" onClick={onAddMore}>
           <Plus className="h-4 w-4" />

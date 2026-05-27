@@ -23,7 +23,7 @@ export default function TopBar({ title, subtitle, search, onSearch, theme, setTh
               <input
                 value={search || ''}
                 onChange={(e) => onSearch(e.target.value)}
-                placeholder="Cari nama, kelas, alasan…"
+                placeholder="Cari nama, kelas, subjek, catatan, alasan…"
                 className="input pl-9"
               />
             </div>

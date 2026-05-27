@@ -32,26 +32,60 @@ function loadScript(src) {
   })
 }
 
+export function stringifyError(e) {
+  if (!e) return 'Ralat tidak diketahui'
+  if (typeof e === 'string') return e
+  if (e instanceof Error) return e.message || e.toString()
+  if (typeof e === 'object') {
+    if (e.result?.error?.message) return e.result.error.message
+    if (e.error && e.error_description) return `${e.error}: ${e.error_description}`
+    if (e.error && typeof e.error === 'string') return e.error
+    if (e.message) return e.message
+    if (e.details) return e.details
+    if (e.type) return e.type
+    try {
+      const j = JSON.stringify(e)
+      return j === '{}' ? 'Ralat kosong daripada Google API' : j
+    } catch {
+      return String(e)
+    }
+  }
+  return String(e)
+}
+
 async function initGapi() {
   if (gapiReady) return
-  await loadScript('https://apis.google.com/js/api.js')
-  await new Promise((resolve) => window.gapi.load('client:picker', resolve))
-  await window.gapi.client.init({
-    apiKey: env.apiKey,
-    discoveryDocs: [DISCOVERY],
-  })
-  gapiReady = true
+  try {
+    await loadScript('https://apis.google.com/js/api.js')
+    await new Promise((resolve) => window.gapi.load('client:picker', resolve))
+    await window.gapi.client.init({
+      apiKey: env.apiKey,
+      discoveryDocs: [DISCOVERY],
+    })
+    gapiReady = true
+  } catch (e) {
+    console.error('initGapi failed', e)
+    throw new Error('Gagal memulakan Google API: ' + stringifyError(e))
+  }
 }
 
 async function initGis() {
   if (gisReady) return
-  await loadScript('https://accounts.google.com/gsi/client')
-  tokenClient = window.google.accounts.oauth2.initTokenClient({
-    client_id: env.clientId,
-    scope: SCOPES,
-    callback: () => {},
-  })
-  gisReady = true
+  try {
+    await loadScript('https://accounts.google.com/gsi/client')
+    tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: env.clientId,
+      scope: SCOPES,
+      callback: () => {},
+      error_callback: (err) => {
+        console.error('GIS error_callback', err)
+      },
+    })
+    gisReady = true
+  } catch (e) {
+    console.error('initGis failed', e)
+    throw new Error('Gagal memuat Google Identity Services: ' + stringifyError(e))
+  }
 }
 
 export async function initGoogleApis() {
@@ -66,14 +100,26 @@ export async function initGoogleApis() {
 
 export function signIn() {
   return new Promise((resolve, reject) => {
-    if (!tokenClient) return reject(new Error('Auth not initialised'))
+    if (!tokenClient) return reject(new Error('Auth belum dimulakan'))
     tokenClient.callback = (resp) => {
-      if (resp.error) return reject(new Error(resp.error_description || resp.error))
+      if (resp.error) {
+        console.error('OAuth token callback error', resp)
+        return reject(new Error(stringifyError(resp)))
+      }
       accessToken = resp.access_token
       window.gapi.client.setToken({ access_token: resp.access_token })
       resolve(resp)
     }
-    tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' })
+    tokenClient.error_callback = (err) => {
+      console.error('OAuth error_callback', err)
+      reject(new Error('Log masuk dibatalkan atau gagal: ' + stringifyError(err)))
+    }
+    try {
+      tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' })
+    } catch (e) {
+      console.error('requestAccessToken threw', e)
+      reject(new Error(stringifyError(e)))
+    }
   })
 }
 
@@ -162,7 +208,9 @@ export async function downloadFile(fileId) {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!resp.ok) {
-    throw new Error(`Gagal muat turun fail (${resp.status})`)
+    let body = ''
+    try { body = await resp.text() } catch {}
+    throw new Error(`Gagal muat turun fail (${resp.status}): ${body.slice(0, 200)}`)
   }
   return await resp.arrayBuffer()
 }

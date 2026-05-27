@@ -15,15 +15,15 @@ import { parseSsbPdf } from './lib/pdfParser'
 import { demoReports } from './lib/demoData'
 import {
   downloadFile, getFolderMeta, initGoogleApis, isSignedIn, listPdfsInFolder,
-  openPicker, resolvePickerSelections, signIn, signOut,
+  openPicker, resolvePickerSelections, signIn, signOut, stringifyError,
 } from './lib/googleDrive'
 
 const TITLES = {
-  overview: { title: 'Ringkasan', subtitle: 'Pandangan tahap tinggi semua laporan dimuat' },
-  compliance: { title: 'Pematuhan ikut Kelas', subtitle: 'Bandingkan kadar serahan antara kelas' },
-  trend: { title: 'Tren ikut Tarikh', subtitle: 'Lihat perubahan pematuhan merentas masa' },
+  overview: { title: 'Ringkasan', subtitle: 'Tinjauan keseluruhan semua laporan yang dimuatkan' },
+  compliance: { title: 'Pematuhan mengikut Kelas', subtitle: 'Bandingkan kadar serahan antara kelas' },
+  trend: { title: 'Tren mengikut Tarikh', subtitle: 'Lihat perubahan pematuhan merentas masa' },
   students: { title: 'Jejak Murid', subtitle: 'Rekod individu setiap murid' },
-  reasons: { title: 'Alasan & Leaderboard', subtitle: 'Punca tidak hantar dan murid menonjol' },
+  reasons: { title: 'Alasan & Carta Kedudukan', subtitle: 'Punca tidak hantar dan murid menonjol' },
 }
 
 export default function App() {
@@ -56,7 +56,8 @@ export default function App() {
         await pickFromDrive()
       }
     } catch (e) {
-      setError(e.message || String(e))
+      console.error(e)
+      setError(stringifyError(e))
       setIsConnecting(false)
     }
   }
@@ -78,7 +79,8 @@ export default function App() {
       }
       await ingestDriveFiles(files)
     } catch (e) {
-      setError(e.message || String(e))
+      console.error(e)
+      setError(stringifyError(e))
       setIsConnecting(false)
       setPhase('connect')
     }
@@ -126,7 +128,8 @@ export default function App() {
       }
       await ingestDriveFiles(files)
     } catch (e) {
-      setError(e.message || String(e))
+      console.error(e)
+      setError(stringifyError(e))
       setIsConnecting(false)
       setPhase('connect')
     }

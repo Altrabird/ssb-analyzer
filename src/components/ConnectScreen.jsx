@@ -8,10 +8,10 @@ import Logo from './Logo'
 import { extractFolderId, getEnvStatus } from '../lib/googleDrive'
 
 const FEATURES = [
-  { icon: BarChart3, title: 'Pematuhan ikut kelas', desc: 'Bandingkan kadar serahan antara kelas serta-merta.' },
-  { icon: LineChart, title: 'Tren ikut tarikh', desc: 'Lihat pola serahan merentas masa untuk setiap kelas.' },
-  { icon: Users, title: 'Jejak per murid', desc: 'Rekod individu dengan carian, isih dan eksport CSV.' },
-  { icon: Sparkles, title: 'Analisis alasan', desc: 'Sebab utama tidak hantar dan murid yang perlu perhatian.' },
+  { icon: BarChart3, title: 'Pematuhan mengikut kelas', desc: 'Bandingkan kadar serahan antara kelas serta-merta.' },
+  { icon: LineChart, title: 'Tren mengikut tarikh', desc: 'Lihat corak serahan merentas masa bagi setiap kelas.' },
+  { icon: Users, title: 'Jejak setiap murid', desc: 'Rekod individu dengan carian, isihan dan eksport CSV.' },
+  { icon: Sparkles, title: 'Analisis alasan', desc: 'Punca utama tidak hantar dan murid yang perlu perhatian.' },
 ]
 
 export default function ConnectScreen({ onSignIn, onDemo, error, isConnecting }) {
@@ -69,8 +69,8 @@ export default function ConnectScreen({ onSignIn, onDemo, error, isConnecting })
               dalam bentuk visual.
             </h1>
             <p className="mt-4 max-w-xl text-balance text-ink-600 dark:text-ink-300">
-              Sambung ke folder Drive yang menyimpan Laporan Semakan Buku Kerja anda — dapatkan analisis pematuhan,
-              tren, jejak murid dan punca utama dalam beberapa saat.
+              Sambungkan folder Drive yang menyimpan Laporan Semakan Buku Kerja anda — dapatkan analisis pematuhan,
+              tren, jejak murid serta punca utama dalam beberapa saat sahaja.
             </p>
 
             <div className="mt-8 space-y-3">
@@ -158,13 +158,13 @@ export default function ConnectScreen({ onSignIn, onDemo, error, isConnecting })
 
             <ul className="mt-8 space-y-2 text-sm text-ink-600 dark:text-ink-300">
               <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Sokongan format dengan/tanpa Jantina &amp; Evidens
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Sokongan format dengan ataupun tanpa Jantina &amp; Evidens
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Fail tidak dimuat naik — diuraikan secara tempatan
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Fail tidak dimuat naik — dianalisis terus dalam pelayar
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Eksport tabular ke CSV bila-bila masa
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Boleh dieksport ke CSV pada bila-bila masa
               </li>
             </ul>
           </motion.div>
