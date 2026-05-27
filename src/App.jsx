@@ -7,6 +7,7 @@ import LoadingScreen from './components/LoadingScreen'
 import InstallPrompt from './components/InstallPrompt'
 import OverviewView from './components/views/OverviewView'
 import ComplianceView from './components/views/ComplianceView'
+import SubjectView from './components/views/SubjectView'
 import TrendView from './components/views/TrendView'
 import StudentsView from './components/views/StudentsView'
 import ReasonsView from './components/views/ReasonsView'
@@ -22,6 +23,7 @@ import {
 const TITLES = {
   overview: { title: 'Ringkasan', subtitle: 'Tinjauan keseluruhan semua laporan yang dimuatkan' },
   compliance: { title: 'Pematuhan mengikut Kelas', subtitle: 'Bandingkan kadar serahan antara kelas' },
+  subjects: { title: 'Analisis Subjek', subtitle: 'Pematuhan mengikut subjek dan kombinasi subjek × kelas' },
   trend: { title: 'Tren mengikut Tarikh', subtitle: 'Lihat perubahan pematuhan merentas masa' },
   students: { title: 'Jejak Murid', subtitle: 'Rekod individu setiap murid' },
   reasons: { title: 'Alasan & Carta Kedudukan', subtitle: 'Punca tidak hantar dan murid menonjol' },
@@ -207,6 +209,7 @@ export default function App() {
   const ViewComponent = useMemo(() => {
     switch (view) {
       case 'compliance': return ComplianceView
+      case 'subjects': return SubjectView
       case 'trend': return TrendView
       case 'students': return StudentsView
       case 'reasons': return ReasonsView

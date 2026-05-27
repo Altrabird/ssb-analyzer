@@ -1,5 +1,6 @@
+import { useMemo, useState } from 'react'
 import { Doughnut, Bar } from 'react-chartjs-2'
-import { ChevronRight, Crown, Frown } from 'lucide-react'
+import { ChevronRight, Crown, Filter, Frown } from 'lucide-react'
 import { reasonsBreakdown, studentRoster } from '../../lib/aggregate'
 import { sortByKey } from '../../lib/utils'
 
@@ -8,9 +9,23 @@ const PALETTE = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#06b6d4', '#3b63ff
 export default function ReasonsView({ reports }) {
   const reasons = reasonsBreakdown(reports)
   const roster = studentRoster(reports)
-  const eligible = roster.filter((r) => r.totals.total >= 2)
-  const top = sortByKey(eligible, (r) => r.rate, 'desc').slice(0, 10)
-  const bottom = sortByKey(eligible, (r) => r.rate, 'asc').slice(0, 10)
+
+  // Sample-size bias fix: leaderboard requires reasonable number of records.
+  // Default threshold = max(3, ceil(maxRecords * 0.5)) — so a student who only
+  // appeared in 6/15 reports doesn't outrank one who appeared in 14/15.
+  const maxRecords = useMemo(
+    () => roster.reduce((m, r) => Math.max(m, r.totals.total), 0),
+    [roster],
+  )
+  const defaultMin = Math.max(3, Math.ceil(maxRecords * 0.5))
+  const [minRecords, setMinRecords] = useState(defaultMin)
+
+  const eligible = useMemo(
+    () => roster.filter((r) => r.totals.total >= minRecords),
+    [roster, minRecords],
+  )
+  const top = useMemo(() => sortByKey(eligible, (r) => r.rate, 'desc').slice(0, 10), [eligible])
+  const bottom = useMemo(() => sortByKey(eligible, (r) => r.rate, 'asc').slice(0, 10), [eligible])
 
   const totalReasons = reasons.reduce((a, b) => a + b.count, 0)
   const donut = {
@@ -141,20 +156,53 @@ export default function ReasonsView({ reports }) {
         </div>
       </div>
 
+      <div className="card-pad">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/40 dark:text-brand-300">
+              <Filter className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-ink-900 dark:text-white">
+                Ambang minimum rekod
+              </div>
+              <div className="text-xs text-ink-500 dark:text-ink-400">
+                Hanya kira murid dengan ≥ {minRecords} rekod (maksimum {maxRecords})
+                · {eligible.length} dari {roster.length} murid layak
+              </div>
+            </div>
+          </div>
+          <div className="flex w-full items-center gap-3 sm:w-72">
+            <input
+              type="range"
+              min={1}
+              max={Math.max(1, maxRecords)}
+              value={minRecords}
+              onChange={(e) => setMinRecords(Number(e.target.value))}
+              className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-ink-200 accent-brand-500 dark:bg-ink-800"
+              aria-label="Ambang minimum rekod"
+            />
+            <span className="min-w-[3rem] rounded-full bg-brand-100 px-3 py-0.5 text-center text-sm font-bold tabular-nums text-brand-700 dark:bg-brand-950/60 dark:text-brand-200">
+              {minRecords}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <LeaderTable
           icon={Crown}
           title="Top 10 Murid Terbaik"
           accent="emerald"
           rows={top}
-          emptyText="Memerlukan sekurang-kurangnya 2 rekod per murid."
+          emptyText={`Tiada murid memenuhi ambang ≥ ${minRecords} rekod. Turunkan ambang.`}
         />
         <LeaderTable
           icon={Frown}
           title="10 Murid Perlu Perhatian"
           accent="rose"
           rows={bottom}
-          emptyText="Memerlukan sekurang-kurangnya 2 rekod per murid."
+          emptyText={`Tiada murid memenuhi ambang ≥ ${minRecords} rekod. Turunkan ambang.`}
         />
       </div>
     </div>

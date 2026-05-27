@@ -1,11 +1,12 @@
 import {
-  BarChart3, Boxes, LineChart, ListTodo, LogOut, Plus, RefreshCcw, Users,
+  BarChart3, BookOpen, Boxes, LineChart, ListTodo, LogOut, Plus, RefreshCcw, Users,
 } from 'lucide-react'
 import Logo from './Logo'
 
 const NAV = [
   { id: 'overview', label: 'Ringkasan', icon: Boxes },
   { id: 'compliance', label: 'Pematuhan mengikut Kelas', icon: BarChart3 },
+  { id: 'subjects', label: 'Analisis Subjek', icon: BookOpen },
   { id: 'trend', label: 'Tren mengikut Tarikh', icon: LineChart },
   { id: 'students', label: 'Jejak Murid', icon: Users },
   { id: 'reasons', label: 'Alasan & Carta Kedudukan', icon: ListTodo },

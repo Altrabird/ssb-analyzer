@@ -127,6 +127,57 @@ export function studentRoster(reports) {
   return out
 }
 
+export function bySubjek(reports) {
+  const grouped = groupBy(reports, (r) => r.header.subjek || 'Tanpa Subjek')
+  const out = []
+  for (const [subjek, list] of grouped) {
+    const totals = list.reduce(
+      (a, r) => {
+        a.jumlah += r.summary.jumlahMurid || 0
+        a.siap += r.summary.siapHantar || 0
+        a.tidak += r.summary.tidakHantar || 0
+        return a
+      },
+      { jumlah: 0, siap: 0, tidak: 0 },
+    )
+    const kelasSet = new Set(list.map((r) => r.header.kelas).filter(Boolean))
+    out.push({
+      subjek,
+      reports: list.length,
+      kelas: Array.from(kelasSet),
+      jumlah: totals.jumlah,
+      siap: totals.siap,
+      tidak: totals.tidak,
+      rate: pct(totals.siap, totals.jumlah),
+    })
+  }
+  return sortByKey(out, (x) => x.rate, 'desc')
+}
+
+export function bySubjekAndClass(reports) {
+  const subjeks = uniq(reports.map((r) => r.header.subjek || 'Tanpa Subjek'))
+  const classes = uniq(reports.map((r) => r.header.kelas).filter(Boolean))
+  const matrix = {}
+  for (const s of subjeks) matrix[s] = {}
+  for (const r of reports) {
+    const s = r.header.subjek || 'Tanpa Subjek'
+    const k = r.header.kelas
+    if (!k) continue
+    if (matrix[s][k] == null) matrix[s][k] = { jumlah: 0, siap: 0, count: 0 }
+    matrix[s][k].jumlah += r.summary.jumlahMurid || 0
+    matrix[s][k].siap += r.summary.siapHantar || 0
+    matrix[s][k].count += 1
+  }
+  // Compute rate per cell
+  for (const s of subjeks) {
+    for (const k of classes) {
+      const cell = matrix[s][k]
+      if (cell) cell.rate = pct(cell.siap, cell.jumlah)
+    }
+  }
+  return { subjeks, classes, matrix }
+}
+
 export function reasonsBreakdown(reports) {
   const counts = {}
   let total = 0
