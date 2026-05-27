@@ -3,7 +3,19 @@ import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerSrc
 
-const STATUSES = ['Belum Semak', 'Siap Hantar', 'Tidak Hantar', 'Hantar Lewat']
+// Status patterns. Longer/more-specific first so "Tidak Hantar" matches before "Hantar".
+// `canonical` = label used everywhere downstream (UI, aggregation, exports).
+const STATUS_PATTERNS = [
+  { pattern: 'Belum Semak', canonical: 'Belum Semak' },
+  { pattern: 'Tidak Hantar', canonical: 'Tidak Hantar' },
+  { pattern: 'Belum Hantar', canonical: 'Tidak Hantar' },
+  { pattern: 'Hantar Lewat', canonical: 'Hantar Lewat' },
+  { pattern: 'Siap Hantar', canonical: 'Siap Hantar' },
+  { pattern: 'Hantar', canonical: 'Siap Hantar' },
+  { pattern: 'Selesai', canonical: 'Siap Hantar' },
+]
+
+const HEADER_LABELS = ['Tarikh', 'Kelas', 'Guru', 'Subjek', 'Catatan', 'Dihasilkan pada', 'Dihasilkan']
 
 async function extractLines(buffer) {
   const pdf = await pdfjs.getDocument({ data: buffer }).promise
@@ -52,25 +64,52 @@ function detectColumns(lines) {
   return { headerY: header.y, headerPage: header.page, hasJantina, hasEvidens }
 }
 
+function extractField(fullText, label) {
+  // Find "Label:" (case-sensitive — these are Malay field names with consistent casing)
+  const startRe = new RegExp(`(^|\\n|\\s)${label}:\\s*`)
+  const m = startRe.exec(fullText)
+  if (!m) return null
+  const start = m.index + m[0].length
+  // Find the earliest stop: another known label OR end-of-line
+  let end = fullText.length
+  // Newline always stops the field
+  const nlIdx = fullText.indexOf('\n', start)
+  if (nlIdx !== -1) end = Math.min(end, nlIdx)
+  // Any other known label terminates the field too (handles inline same-line fields)
+  for (const otherLabel of HEADER_LABELS) {
+    if (otherLabel === label) continue
+    const stopRe = new RegExp(`\\s+${otherLabel}:`)
+    const sm = stopRe.exec(fullText.slice(start, end))
+    if (sm) end = Math.min(end, start + sm.index)
+  }
+  const value = fullText.slice(start, end).trim()
+  return value || null
+}
+
+function cleanValue(v) {
+  if (!v) return null
+  const t = v.trim()
+  if (!t || t === '-' || t === '—') return null
+  return t.replace(/\s+/g, ' ')
+}
+
 function parseHeader(lines) {
   const fullText = lines.map((l) => l.text).join('\n')
-  const get = (re) => {
-    const m = fullText.match(re)
-    return m ? m[1].trim() : null
-  }
-  const tarikh = get(/Tarikh:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/)
-  const kelas = get(/Kelas:\s*([^\n|]+?)(?=\s*(?:Guru:|Dihasilkan|\||$))/)
-  const guruRaw = get(/Guru:\s*([^\n]+?)(?=\s+Subjek:|$)/)
-  const subjekRaw = get(/Subjek:\s*([^\n]+?)(?=\s+Dihasilkan|$)/)
-  const catatanRaw = get(/Catatan:\s*([^\n]+?)(?=\s+Dihasilkan|$)/)
-  const dihasilkan = get(/Dihasilkan pada:\s*([0-9/]+,\s*[0-9:]+)/)
+  const tarikh = extractField(fullText, 'Tarikh')
+  const kelas = extractField(fullText, 'Kelas')
+  const guru = extractField(fullText, 'Guru')
+  const subjek = extractField(fullText, 'Subjek')
+  const catatan = extractField(fullText, 'Catatan')
+  const dihasilkan = extractField(fullText, 'Dihasilkan pada') || extractField(fullText, 'Dihasilkan')
+  // Tarikh strictly ISO YYYY-MM-DD
+  const tarikhClean = tarikh && /^\d{4}-\d{2}-\d{2}/.test(tarikh) ? tarikh.match(/^\d{4}-\d{2}-\d{2}/)[0] : tarikh
   return {
-    tarikh,
-    kelas: kelas ? kelas.replace(/\s+/g, ' ').trim() : null,
-    guru: guruRaw && guruRaw.trim() !== '-' ? guruRaw.trim() : null,
-    subjek: subjekRaw && subjekRaw.trim() !== '-' ? subjekRaw.trim() : null,
-    catatan: catatanRaw && catatanRaw.trim() !== '-' ? catatanRaw.trim() : null,
-    dihasilkan,
+    tarikh: tarikhClean,
+    kelas: cleanValue(kelas),
+    guru: cleanValue(guru),
+    subjek: cleanValue(subjek),
+    catatan: cleanValue(catatan),
+    dihasilkan: cleanValue(dihasilkan),
   }
 }
 
@@ -89,9 +128,16 @@ function parseSummary(lines) {
 }
 
 function findStatusInText(text) {
-  for (const s of STATUSES) {
-    const idx = text.indexOf(s)
-    if (idx >= 0) return { key: s, idx }
+  // STATUS_PATTERNS is ordered longest/most-specific first.
+  // For each pattern, ensure it is followed by a word boundary so "Hantar" doesn't
+  // greedily match inside "Tidak Hantar" — though our ordering already prevents that.
+  for (const { pattern, canonical } of STATUS_PATTERNS) {
+    const idx = text.indexOf(pattern)
+    if (idx < 0) continue
+    // Word boundary check: char after the pattern must not be a letter
+    const after = text[idx + pattern.length]
+    if (after !== undefined && /[a-zA-Z]/.test(after)) continue
+    return { key: pattern, canonical, idx, length: pattern.length }
   }
   return null
 }
@@ -101,7 +147,7 @@ function parseStudentLine(line, cols) {
   const status = findStatusInText(text)
   if (!status) return null
   const before = text.slice(0, status.idx).trim()
-  const afterRaw = text.slice(status.idx + status.key.length).trim()
+  const afterRaw = text.slice(status.idx + status.length).trim()
 
   const numMatch = before.match(/^(\d+)\s+(.*)$/s)
   if (!numMatch) return null
@@ -137,9 +183,10 @@ function parseStudentLine(line, cols) {
     no,
     nama,
     jantina,
-    status: status.key,
-    alasan: alasan && alasan !== '-' ? alasan : null,
-    evidens: evidens && evidens !== '-' ? evidens : null,
+    status: status.canonical,
+    statusRaw: status.key,
+    alasan: alasan && alasan !== '-' && alasan !== '—' ? alasan : null,
+    evidens: evidens && evidens !== '-' && evidens !== '—' ? evidens : null,
   }
 }
 
