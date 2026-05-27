@@ -1,17 +1,25 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Bar } from 'react-chartjs-2'
 import { Download } from 'lucide-react'
 import { byClass } from '../../lib/aggregate'
 import { classColor } from '../../lib/utils'
+import { deltaFooter, makeBarGradient, thresholdAnnotations } from '../../lib/chartConfig'
 
 export default function ComplianceView({ reports }) {
   const [sortBy, setSortBy] = useState('rate')
   const data = byClass(reports)
-  const sorted = [...data].sort((a, b) => {
-    if (sortBy === 'rate') return b.rate - a.rate
-    if (sortBy === 'students') return b.jumlah - a.jumlah
-    return a.kelas.localeCompare(b.kelas)
-  })
+  const sorted = useMemo(() => {
+    return [...data].sort((a, b) => {
+      if (sortBy === 'rate') return b.rate - a.rate
+      if (sortBy === 'students') return b.jumlah - a.jumlah
+      return a.kelas.localeCompare(b.kelas)
+    })
+  }, [data, sortBy])
+
+  const avg = useMemo(() => {
+    if (!sorted.length) return 0
+    return sorted.reduce((a, b) => a + b.rate, 0) / sorted.length
+  }, [sorted])
 
   const chart = {
     labels: sorted.map((d) => d.kelas),
@@ -19,8 +27,9 @@ export default function ComplianceView({ reports }) {
       {
         label: 'Peratusan Siap Hantar',
         data: sorted.map((d) => d.rate),
-        backgroundColor: sorted.map((d) => classColor(d.kelas)),
-        borderRadius: 10,
+        backgroundColor: (ctx) => makeBarGradient(ctx, classColor(ctx.chart.data.labels[ctx.dataIndex] || ''), 'horizontal'),
+        hoverBackgroundColor: (ctx) => classColor(ctx.chart.data.labels[ctx.dataIndex] || ''),
+        borderRadius: 12,
         borderSkipped: false,
         maxBarThickness: 56,
       },
@@ -32,30 +41,53 @@ export default function ComplianceView({ reports }) {
       legend: { display: false },
       tooltip: {
         callbacks: {
+          title: (items) => sorted[items[0].dataIndex].kelas,
           label: (ctx) => {
             const row = sorted[ctx.dataIndex]
             return [
-              ` ${row.rate}% siap hantar`,
-              ` ${row.siap}/${row.jumlah} murid · ${row.reports} laporan`,
+              `${row.rate}% siap hantar`,
+              `${row.siap} murid hantar, ${row.tidak} tidak hantar`,
+              `${row.reports} laporan · ${row.jumlah} rekod`,
             ]
           },
+          labelTextColor: () => '#e2e8f0',
+          footer: deltaFooter(avg),
         },
+      },
+      annotation: { annotations: thresholdAnnotations({ axis: 'x' }) },
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'end',
+        offset: 6,
+        clamp: true,
+        clip: false,
+        formatter: (v) => `${v}%`,
+        color: (ctx) => {
+          const v = ctx.dataset.data[ctx.dataIndex]
+          if (v >= 75) return '#059669'
+          if (v >= 50) return '#d97706'
+          return '#dc2626'
+        },
+        font: { weight: '700', size: 11 },
       },
     },
     scales: {
       x: {
         beginAtZero: true,
         max: 100,
-        ticks: { callback: (v) => `${v}%` },
-        grid: { color: 'rgba(148,163,184,0.15)' },
+        ticks: { callback: (v) => `${v}%`, padding: 4 },
+        grid: { color: 'rgba(148,163,184,0.15)', drawBorder: false },
       },
       y: {
-        grid: { display: false },
-        ticks: { font: { weight: 600 } },
+        grid: { display: false, drawBorder: false },
+        ticks: { font: { weight: 600 }, padding: 6 },
       },
     },
     maintainAspectRatio: false,
-    animation: { duration: 600, easing: 'easeOutCubic' },
+    layout: { padding: { right: 48 } },
+    animation: { duration: 700, easing: 'easeOutCubic' },
+    interaction: { mode: 'nearest', intersect: true },
   }
 
   function exportCsv() {
@@ -78,10 +110,12 @@ export default function ComplianceView({ reports }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-semibold text-ink-900 dark:text-white">
-              Pematuhan ikut Kelas
+              Pematuhan mengikut Kelas
             </h2>
             <p className="text-xs text-ink-500 dark:text-ink-400">
-              Peratusan siap hantar disusun mengikut prestasi tertinggi
+              Purata pematuhan keseluruhan:{' '}
+              <span className="font-semibold text-ink-700 dark:text-ink-200">{avg.toFixed(1)}%</span>{' '}
+              · garis putus-putus = sasaran 75% & amaran 50%
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -95,23 +129,23 @@ export default function ComplianceView({ reports }) {
                   key={k}
                   onClick={() => setSortBy(k)}
                   className={
-                    'rounded-lg px-3 py-1 transition ' +
+                    'cursor-pointer rounded-lg px-3 py-1 transition-colors duration-200 ' +
                     (sortBy === k
                       ? 'bg-white text-brand-700 shadow-sm dark:bg-ink-900 dark:text-brand-300'
-                      : 'text-ink-600 dark:text-ink-300')
+                      : 'text-ink-600 hover:text-ink-900 dark:text-ink-300 dark:hover:text-white')
                   }
                 >
                   {l}
                 </button>
               ))}
             </div>
-            <button className="btn-outline" onClick={exportCsv}>
+            <button className="btn-outline cursor-pointer" onClick={exportCsv}>
               <Download className="h-4 w-4" />
               CSV
             </button>
           </div>
         </div>
-        <div className="mt-4" style={{ height: Math.max(280, sorted.length * 48 + 40) }}>
+        <div className="mt-4" style={{ height: Math.max(280, sorted.length * 52 + 60) }}>
           <Bar data={chart} options={options} />
         </div>
       </div>
@@ -133,7 +167,10 @@ export default function ComplianceView({ reports }) {
             </thead>
             <tbody className="divide-y divide-ink-100 dark:divide-ink-800/70">
               {sorted.map((d) => (
-                <tr key={d.kelas} className="text-ink-700 dark:text-ink-200">
+                <tr
+                  key={d.kelas}
+                  className="text-ink-700 transition-colors duration-200 hover:bg-ink-50/60 dark:text-ink-200 dark:hover:bg-ink-800/40"
+                >
                   <td className="px-4 py-2.5 font-semibold">
                     <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: classColor(d.kelas) }} />
                     {d.kelas}
@@ -144,7 +181,10 @@ export default function ComplianceView({ reports }) {
                   <td className="px-4 py-2.5 text-right tabular-nums text-rose-600 dark:text-rose-400">{d.tidak}</td>
                   <td className="px-4 py-2.5">
                     <div className="h-2 w-40 overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
-                      <div className="h-full rounded-full" style={{ width: `${d.rate}%`, background: classColor(d.kelas) }} />
+                      <div
+                        className="h-full rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${d.rate}%`, background: classColor(d.kelas) }}
+                      />
                     </div>
                   </td>
                   <td className="px-4 py-2.5 text-right font-semibold tabular-nums">{d.rate}%</td>

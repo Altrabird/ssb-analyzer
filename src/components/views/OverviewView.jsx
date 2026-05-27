@@ -13,26 +13,58 @@ export default function OverviewView({ reports }) {
   const dates = byDate(reports)
   const lastDate = dates.length ? dates[dates.length - 1].tarikh : null
 
+  const belum = Math.max(0, s.jumlah - s.siap - s.tidak)
   const doughnut = {
     labels: ['Siap Hantar', 'Tidak Hantar', 'Belum Semak'],
     datasets: [
       {
-        data: [
-          s.siap,
-          s.tidak,
-          Math.max(0, s.jumlah - s.siap - s.tidak),
-        ],
+        data: [s.siap, s.tidak, belum],
         backgroundColor: ['#10b981', '#ef4444', '#94a3b8'],
+        hoverBackgroundColor: ['#059669', '#dc2626', '#64748b'],
         borderColor: 'transparent',
-        borderRadius: 4,
-        spacing: 2,
+        borderRadius: 6,
+        spacing: 3,
+        hoverOffset: 8,
       },
     ],
   }
   const doughnutOpts = {
-    cutout: '70%',
-    plugins: { legend: { position: 'bottom' } },
+    cutout: '72%',
+    plugins: {
+      legend: { position: 'bottom', labels: { padding: 14, font: { size: 11 } } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const total = s.jumlah || 1
+            const pct = ((ctx.parsed / total) * 100).toFixed(1)
+            return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`
+          },
+        },
+      },
+    },
     maintainAspectRatio: false,
+    animation: { animateRotate: true, animateScale: true, duration: 800 },
+  }
+
+  // Center text plugin — draws the overall compliance % in the donut hole
+  const centerTextPlugin = {
+    id: 'centerText',
+    afterDraw(chart) {
+      const { ctx, chartArea } = chart
+      if (!chartArea) return
+      const cx = (chartArea.left + chartArea.right) / 2
+      const cy = (chartArea.top + chartArea.bottom) / 2
+      ctx.save()
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#0f172a'
+      ctx.font = '700 28px "Plus Jakarta Sans", Inter, sans-serif'
+      ctx.fillText(`${s.overallRate}%`, cx, cy - 8)
+      ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b'
+      ctx.font = '500 11px Inter, sans-serif'
+      ctx.fillText('pematuhan', cx, cy + 14)
+      ctx.restore()
+    },
   }
 
   const topClass = cls[0]
@@ -125,7 +157,7 @@ export default function OverviewView({ reports }) {
           <h2 className="font-display text-lg font-semibold text-ink-900 dark:text-white">Taburan status</h2>
           <div className="mt-2 text-xs text-ink-500 dark:text-ink-400">Keseluruhan rekod murid</div>
           <div className="mt-4 h-56">
-            <Doughnut data={doughnut} options={doughnutOpts} />
+            <Doughnut data={doughnut} options={doughnutOpts} plugins={[centerTextPlugin]} />
           </div>
           <div className="mt-4 space-y-2 text-sm">
             <Row icon={CheckCircle2} color="text-emerald-500" label="Siap Hantar" value={s.siap} />

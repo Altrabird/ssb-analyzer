@@ -12,26 +12,36 @@ export default function ReasonsView({ reports }) {
   const top = sortByKey(eligible, (r) => r.rate, 'desc').slice(0, 10)
   const bottom = sortByKey(eligible, (r) => r.rate, 'asc').slice(0, 10)
 
+  const totalReasons = reasons.reduce((a, b) => a + b.count, 0)
   const donut = {
     labels: reasons.map((r) => r.alasan),
     datasets: [
       {
         data: reasons.map((r) => r.count),
         backgroundColor: PALETTE.slice(0, reasons.length || 1),
+        hoverBackgroundColor: PALETTE.slice(0, reasons.length || 1).map((c) => c),
         borderColor: 'transparent',
-        spacing: 2,
+        spacing: 3,
+        borderRadius: 6,
+        hoverOffset: 8,
       },
     ],
   }
   const donutOpts = {
-    cutout: '62%',
+    cutout: '64%',
     plugins: {
-      legend: { position: 'right' },
+      legend: { position: 'right', labels: { padding: 12, font: { size: 11 }, boxWidth: 10 } },
       tooltip: {
-        callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed} kes` },
+        callbacks: {
+          label: (ctx) => {
+            const pct = totalReasons ? ((ctx.parsed / totalReasons) * 100).toFixed(1) : 0
+            return [` ${ctx.label}`, ` ${ctx.parsed} kes (${pct}%)`]
+          },
+        },
       },
     },
     maintainAspectRatio: false,
+    animation: { animateRotate: true, animateScale: true, duration: 800 },
   }
 
   const barReasons = {
@@ -41,19 +51,43 @@ export default function ReasonsView({ reports }) {
         label: 'Bilangan kes',
         data: reasons.map((r) => r.count),
         backgroundColor: reasons.map((_, i) => PALETTE[i % PALETTE.length]),
-        borderRadius: 8,
-        maxBarThickness: 36,
+        hoverBackgroundColor: reasons.map((_, i) => PALETTE[i % PALETTE.length]),
+        borderRadius: 10,
+        borderSkipped: false,
+        maxBarThickness: 32,
       },
     ],
   }
   const barOpts = {
     indexAxis: 'y',
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.15)' } },
-      y: { grid: { display: false } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: (items) => reasons[items[0].dataIndex].alasan,
+          label: (ctx) => {
+            const r = reasons[ctx.dataIndex]
+            return [` ${r.count} kes`, ` ${r.share}% daripada jumlah alasan`]
+          },
+        },
+      },
+      datalabels: {
+        display: true,
+        anchor: 'end',
+        align: 'end',
+        offset: 4,
+        formatter: (v) => v,
+        color: '#475569',
+        font: { weight: '700', size: 11 },
+      },
     },
+    scales: {
+      x: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.15)', drawBorder: false }, ticks: { precision: 0 } },
+      y: { grid: { display: false, drawBorder: false } },
+    },
+    layout: { padding: { right: 24 } },
     maintainAspectRatio: false,
+    animation: { duration: 700, easing: 'easeOutCubic' },
   }
 
   return (
