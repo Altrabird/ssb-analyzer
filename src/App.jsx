@@ -4,6 +4,7 @@ import ConnectScreen from './components/ConnectScreen'
 import Sidebar, { MobileNav } from './components/Sidebar'
 import TopBar from './components/TopBar'
 import LoadingScreen from './components/LoadingScreen'
+import InstallPrompt from './components/InstallPrompt'
 import OverviewView from './components/views/OverviewView'
 import ComplianceView from './components/views/ComplianceView'
 import TrendView from './components/views/TrendView'
@@ -230,6 +231,7 @@ export default function App() {
           className="hidden"
           onChange={handleFileUpload}
         />
+        <InstallPrompt />
       </>
     )
   }
@@ -279,6 +281,7 @@ export default function App() {
         className="hidden"
         onChange={handleFileUpload}
       />
+      <InstallPrompt />
     </div>
   )
 }
